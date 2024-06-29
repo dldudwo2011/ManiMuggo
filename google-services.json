@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "248477464893",
+    "project_id": "manimuggo-android",
+    "storage_bucket": "manimuggo-android.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:248477464893:android:6fc37a831d3991c6ff2d54",
+        "android_client_info": {
+          "package_name": "com.manimuggo.manimuggoAndroid"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBd_l5H0532ylxSwe-XI6ABEaRA93ZdKJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
