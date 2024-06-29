@@ -1,177 +1,270 @@
-// pages/register-driver.js
 import { useState } from 'react';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
+import axios from 'axios';
+import "../styles/DriverRegistration.module.css";
 
-export default function RegisterDriver() {
+const vehicleBrands = [
+  'Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'BMW', 'Mercedes-Benz',
+  'Volkswagen', 'Audi', 'Kia', 'Hyundai', 'Mazda', 'Subaru', 'Lexus', 'Jeep',
+  'Dodge', 'Ram', 'Tesla', 'Buick', 'Chrysler', 'Cadillac', 'GMC', 'Volvo',
+  'Jaguar', 'Land Rover', 'Porsche', 'Infiniti', 'Acura', 'Mitsubishi', 'Mini'
+];
+
+const vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Van', 'Coupe', 'Wagon', 'Convertible'];
+
+const years = Array.from({ length: new Date().getFullYear() - 1990 + 1 }, (_, i) => 1990 + i);
+
+const DriverRegistration = () => {
+  const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
-    vehicleType: '',
-    licenseNumber: '',
-    city: '',
+    firstName: '',
+    lastName: '',
+    email: '',
     phone: '',
-    photo: null,
-    license: null,
+    country: '',
+    address: '',
+    licenseNumber: '',
+    vehicleBrand: '',
+    vehicleType: '',
+    vehicleYear: '',
+    vehicleName: '',
+    licensePlate: '',
+    consent: false,
+    facePhoto: null,
+    phoneVerified: false,
+    verificationCode: '',
+    sentCode: ''
   });
 
-  const [verificationCode, setVerificationCode] = useState('');
-  const [verificationSent, setVerificationSent] = useState(false);
-
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value,
+    });
   };
 
   const handleFileChange = (e) => {
-    const { name, files } = e.target;
-    setFormData({ ...formData, [name]: files[0] });
+    setFormData({
+      ...formData,
+      facePhoto: e.target.files[0],
+    });
   };
 
-  const handleSendVerificationCode = async () => {
-    const response = await fetch('/api/send-verification-code', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ phone: formData.phone }),
-    });
+  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState('canada');
 
-    if (response.ok) {
-      setVerificationSent(true);
+  const handleCountryChange = (event) => {
+    const selectedCountry = event.target.value;
+    setCountry(selectedCountry);
+    if (selectedCountry === 'canada') {
+      setPhone('+1');
+    } else if (selectedCountry === 'usa') {
+      setPhone('+1');
+    }
+  };
+
+  const handlePhoneChange = (event) => {
+    setPhone(event.target.value);
+  };
+
+  const sendVerificationCode = async () => {
+    try {
+      const response = await axios.post('/api/sendVerificationCode', { phone });
+      console.log('Verification code sent:', response.data);
       alert('Verification code sent!');
-    } else {
-      alert('Error sending verification code.');
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Request data:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      console.error('Error config:', error.config);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const verifyCode = async () => {
+    try {
+      const response = await axios.post('/api/verifyCode', { phone, code: formData.verificationCode });
+      if (response.data.success) {
+        setFormData({ ...formData, phoneVerified: true });
+        alert('Phone number verified!');
+      } else {
+        alert('Invalid verification code');
+      }
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      alert('Error verifying code');
+    }
+  };
+
+  const nextStep = () => {
+    if (step < 3) setStep(step + 1);
+  };
+
+  const prevStep = () => {
+    if (step > 0) setStep(step - 1);
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    const formDataToSend = new FormData();
-    for (const key in formData) {
-      formDataToSend.append(key, formData[key]);
-    }
-    formDataToSend.append('verificationCode', verificationCode);
-
-    const response = await fetch('/api/register-driver', {
-      method: 'POST',
-      body: formDataToSend,
-    });
-
-    if (response.ok) {
-      alert('Driver registered successfully!');
-    } else {
-      alert('Error registering driver.');
-    }
+    // Handle form submission
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-yellow-400 shadow-md">
-        <div className="container mx-auto flex justify-between items-center p-4">
-          <div className="flex items-center">
-            <img src="/logo.png" alt="먹자 Logo" className="h-10 w-10" />
-            <span className="text-2xl font-bold ml-2">먹자</span>
-          </div>
-        </div>
-      </header>
-      <main className="container mx-auto p-8 flex flex-col items-center flex-grow">
-        <h1 className="text-4xl font-bold mb-8 text-center">Register as a Driver</h1>
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-          <div className="mb-4">
-            <label htmlFor="vehicleType" className="block text-lg font-medium mb-2">Vehicle Type</label>
-            <input
-              type="text"
-              id="vehicleType"
-              name="vehicleType"
-              value={formData.vehicleType}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="licenseNumber" className="block text-lg font-medium mb-2">License Number</label>
-            <input
-              type="text"
-              id="licenseNumber"
-              name="licenseNumber"
-              value={formData.licenseNumber}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="city" className="block text-lg font-medium mb-2">City</label>
-            <input
-              type="text"
-              id="city"
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="phone" className="block text-lg font-medium mb-2">Phone Number</label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <button
-              type="button"
-              onClick={handleSendVerificationCode}
-              className="mt-2 bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600"
-            >
-              Send Verification Code
-            </button>
-          </div>
-          {verificationSent && (
-            <div className="mb-4">
-              <label htmlFor="verificationCode" className="block text-lg font-medium mb-2">Verification Code</label>
-              <input
-                type="text"
-                id="verificationCode"
-                name="verificationCode"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-          )}
-          <div className="mb-4">
-            <label htmlFor="photo" className="block text-lg font-medium mb-2">Your Photo</label>
-            <input
-              type="file"
-              id="photo"
-              name="photo"
-              onChange={handleFileChange}
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="license" className="block text-lg font-medium mb-2">Driver's License Photo</label>
-            <input
-              type="file"
-              id="license"
-              name="license"
-              onChange={handleFileChange}
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg shadow-md hover:bg-blue-600">
-            Register Driver
-          </button>
-        </form>
-      </main>
-      <footer className="bg-yellow-400 text-center p-4 mt-auto">
-        <p>&copy; 2024 먹자. All rights reserved.</p>
-      </footer>
+    <div className="max-w-lg mx-auto p-6 bg-white shadow-md rounded-md mt-8">
+      <TransitionGroup>
+        <CSSTransition key={step} timeout={300} classNames="fade">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {step === 0 && (
+              <div className="form-step">
+                <h2 className="text-2xl font-bold mb-6">Step 1: Personal Information</h2>
+                <div className="space-y-4">
+                  <label className="block">
+                    First Name:
+                    <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                  </label>
+                  <label className="block">
+                    Last Name:
+                    <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                  </label>
+                  <label className="block">
+                    Email:
+                    <input type="email" name="email" value={formData.email} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                  </label>
+                  <label htmlFor="country" className="block text-gray-700 text-sm font-bold mb-2">Country</label>
+                  <select 
+                    id="country" 
+                    value={country} 
+                    onChange={handleCountryChange} 
+                    className="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
+                  >
+                    <option value="canada">Canada</option>
+                    <option value="usa">USA</option>
+                  </select>
+                  <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
+                  <input 
+                    type="text" 
+                    id="phone" 
+                    value={phone} 
+                    onChange={handlePhoneChange} 
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  />
+                  {!formData.phoneVerified && (
+                    <div className="space-y-4">
+                      <button 
+                        onClick={sendVerificationCode} 
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                      >
+                        Send Verification Code
+                      </button>
+                      <label className="block">
+                        Verification Code:
+                        <input type="text" name="verificationCode" value={formData.verificationCode} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                      </label>
+                      <button type="button" onClick={verifyCode} className="bg-green-500 text-white py-2 px-4 rounded-md shadow hover:bg-green-600 mt-2">Verify Code</button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-between mt-6">
+                  <button type="button" onClick={nextStep} className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600">Next</button>
+                </div>
+              </div>
+            )}
+            {step === 1 && (
+              <div className="form-step">
+                <h2 className="text-2xl font-bold mb-6">Step 2: Vehicle Information</h2>
+                <div className="space-y-4">
+                  <label className="block">
+                    Vehicle Brand:
+                    <select name="vehicleBrand" value={formData.vehicleBrand} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                      <option value="">Select Brand</option>
+                      {vehicleBrands.map(brand => (
+                        <option key={brand} value={brand}>{brand}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    Vehicle Type:
+                    <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                      <option value="">Select Type</option>
+                      {vehicleTypes.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    Vehicle Year:
+                    <select name="vehicleYear" value={formData.vehicleYear} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                      <option value="">Select Year</option>
+                      {years.map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    Vehicle Name:
+                    <input type="text" name="vehicleName" value={formData.vehicleName} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                  </label>
+                  <label className="block">
+                    License Plate:
+                    <input type="text" name="licensePlate" value={formData.licensePlate} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                  </label>
+                </div>
+                <div className="flex justify-between mt-6">
+                  <button type="button" onClick={prevStep} className="bg-gray-500 text-white py-2 px-4 rounded-md shadow hover:bg-gray-600">Previous</button>
+                  <button type="button" onClick={nextStep} className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600">Next</button>
+                </div>
+              </div>
+            )}
+            {step === 2 && (
+              <div className="form-step">
+                <h2 className="text-2xl font-bold mb-6">Step 3: License Verification</h2>
+                <div className="space-y-4">
+                  <label className="block">
+                    License Number:
+                    <input type="text" name="licenseNumber" value={formData.licenseNumber} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                  </label>
+                  <label className="block">
+                    Upload Face Photo:
+                    <input type="file" accept="image/*" onChange={handleFileChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                  </label>
+                </div>
+                <div className="flex justify-between mt-6">
+                  <button type="button" onClick={prevStep} className="bg-gray-500 text-white py-2 px-4 rounded-md shadow hover:bg-gray-600">Previous</button>
+                  <button type="button" onClick={nextStep} className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600">Next</button>
+                </div>
+              </div>
+            )}
+            {step === 3 && (
+              <div className="form-step">
+                <h2 className="text-2xl font-bold mb-6">Step 4: Agreement and Consent</h2>
+                <div className="space-y-4">
+                  <label className="block">
+                    <input type="checkbox" name="consent" checked={formData.consent} onChange={handleChange} required className="mr-2" />
+                    I consent to a background check and agree to the terms and conditions.
+                  </label>
+                </div>
+                <div className="flex justify-between mt-6">
+                  <button type="button" onClick={prevStep} className="bg-gray-500 text-white py-2 px-4 rounded-md shadow hover:bg-gray-600">Previous</button>
+                  <button type="submit" className="bg-green-500 text-white py-2 px-4 rounded-md shadow hover:bg-green-600">Submit</button>
+                </div>
+              </div>
+            )}
+          </form>
+        </CSSTransition>
+      </TransitionGroup>
     </div>
   );
-}
+};
+
+export default DriverRegistration;
+
+
+
 

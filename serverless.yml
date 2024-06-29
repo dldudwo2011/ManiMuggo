@@ -1,0 +1,41 @@
+service: nextjs-lambda
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-2
+
+functions:
+  nextjsApi:
+    handler: pages/api/orders.handler
+    events:
+      - http:
+          path: orders
+          method: post
+          cors: true
+resources:
+  Resources:
+    OrdersTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: 'Orders'
+        AttributeDefinitions:
+          - AttributeName: 'orderId'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'orderId'
+            KeyType: 'HASH'
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+package:
+  exclude:
+    - node_modules/**
+    - .git/**
+    - .vscode/**
+    - .DS_Store
+    - npm-debug.log
+    - yarn-error.log
+  include:
+    - node_modules/some-package-to-include/**
+    - node_modules/another-package-to-include/**

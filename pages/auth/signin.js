@@ -1,4 +1,4 @@
-import { providers, signIn, csrfToken } from "next-auth/client"
+import { providers, signIn, csrfToken } from "next-auth/react"
 
 export default function SignIn({ providers, csrfToken }) {
   return (

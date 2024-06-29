@@ -1,5 +1,6 @@
 // pages/register-restaurant.js
 import { useState } from 'react';
+import "../src/app/globals.css"
 
 export default function RegisterRestaurant() {
   const [formData, setFormData] = useState({

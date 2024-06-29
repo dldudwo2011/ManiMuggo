@@ -1,7 +1,8 @@
-import { useSession, signIn, signOut } from "next-auth/react"
+import { useSession, signIn, signOut } from "next-auth/react";
 import Geolocation from '../components/Geolocation';
-import { useState} from 'react';
-import "../src/app/globals.css"
+import { useState, useEffect } from 'react';
+import "../src/app/globals.css";
+
 const translations = {
   en: {
     welcome: "Delicious Korean food delivered to your doorstep.",
@@ -14,7 +15,7 @@ const translations = {
     contact: "Contact",
     login: "Login",
     logout: "Logout",
-    go: "Go"
+    go: "Go",
   },
   ko: {
     welcome: "한국인들을 위한 음식 배달 전문앱 먹자!",
@@ -27,7 +28,7 @@ const translations = {
     contact: "연락처",
     login: "로그인",
     logout: "로그아웃",
-    go: "가기"
+    go: "가기",
   },
   fr: {
     welcome: "Nourriture coréenne délicieuse livrée à votre porte.",
@@ -40,21 +41,52 @@ const translations = {
     contact: "Contact",
     login: "Connexion",
     logout: "Déconnexion",
-    go: "Aller"
-  }
+    go: "Aller",
+  },
 };
 
 export default function Home() {
   const { data: session, status } = useSession();
-
   const [restaurants, setRestaurants] = useState([]);
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState('ko');
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const fetchRestaurants = async (location) => {
     const response = await fetch(`/api/restaurants?lat=${location.latitude}&lon=${location.longitude}`);
     const data = await response.json();
     setRestaurants(data);
   };
+
+  const slides = [
+    {
+      content: "한국인의 입맛에 맞는 음식들을 배달해드립니다!",
+      bgColor: "bg-blue-500",
+    },
+    {
+      content: "한국인들 리뷰포함 음식점들보러가기",
+      bgColor: "bg-yellow-500",
+      button: {
+        text: "주문하기",
+        link: "/order",
+      },
+    },
+    {
+      content: "리뷰 남기면 다음 주문시 $1 할인 이벤트! 리뷰 남기러 가기",
+      bgColor: "bg-red-500",
+      button: {
+        text: "바로가기",
+        link: "/review",
+      },
+    },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [slides.length]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
@@ -83,14 +115,66 @@ export default function Home() {
               onChange={(e) => setLanguage(e.target.value)} 
               className="bg-white text-gray-900 py-2 px-4 rounded-lg shadow-md ml-4"
             >
-              <option value="en">English</option>
               <option value="ko">한국어</option>
+              <option value="en">English</option>
               <option value="fr">Français</option>
             </select>
           </nav>
         </div>
       </header>
       <main className="container mx-auto p-8 flex flex-col items-center flex-grow">
+        {/* Section 1 */}
+        <section className="flex items-center justify-between bg-green-500 text-white py-12 px-8 rounded-lg shadow-md w-full mb-8">
+          <h1 className="text-4xl font-bold">
+            외국에 사는 한국인들을 위한 배달서비스 먹자!
+          </h1>
+          <div className="bg-yellow-100 p-6 rounded-lg shadow-md text-center">
+            <p className="text-xl font-semibold mb-4">{translations[language].download}</p>
+            <a href="/download/ios" className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 inline-block mb-4">Download iOS App</a>
+            <a href="/download/android" className="bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-600 inline-block">Download Android App</a>
+          </div>
+        </section>
+
+        {/* Section 2 - Carousel */}
+        <section className="w-full mb-8 relative overflow-hidden">
+          <div className="flex transition-transform duration-1000" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
+            {slides.map((slide, index) => (
+              <div key={index} className={`min-w-full h-64 flex items-center justify-center ${slide.bgColor} text-white text-4xl p-12`}>
+                <div className="text-center">
+                  <p>{slide.content}</p>
+                  {slide.button && (
+                    <a href={slide.button.link} className="bg-yellow-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-yellow-600 inline-block mt-4">
+                      {slide.button.text}
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="absolute inset-0 flex justify-between items-center">
+            <button onClick={() => setCurrentSlide((currentSlide - 1 + slides.length) % slides.length)} className="bg-black bg-opacity-50 text-white px-2 py-1">
+              ‹
+            </button>
+            <button onClick={() => setCurrentSlide((currentSlide + 1) % slides.length)} className="bg-black bg-opacity-50 text-white px-2 py-1">
+              ›
+            </button>
+          </div>
+        </section>
+
+        {/* Section 3 - Registration and Driver Boxes */}
+        <section className="flex justify-between w-full">
+          <div className="bg-yellow-100 p-6 rounded-lg shadow-md w-full max-w-md text-center mr-4">
+            <p className="text-xl font-semibold mb-4">{translations[language].partner}</p>
+            <p className="text-xl font-semibold mb-4">{translations[language].register}</p>
+            <a href="/register" className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 inline-block">{translations[language].go}</a>
+          </div>
+          <div className="bg-yellow-100 p-6 rounded-lg shadow-md w-full max-w-md text-center">
+            <p className="text-xl font-semibold mb-4">{translations[language].driver}</p>
+            <a href="/driver" className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 inline-block">{translations[language].go}</a>
+          </div>
+        </section>
+
+        {/* Existing Components */}
         <h1 className="text-4xl font-bold mb-8 text-center">{translations[language].welcome}</h1>
         <p className="text-lg mb-8 text-center">{translations[language].welcome}</p>
         {!session && (
@@ -124,24 +208,11 @@ export default function Home() {
             </div>
           </div>
         )}
-        <div className="bg-yellow-100 p-6 rounded-lg shadow-md w-full max-w-md mt-8 text-center">
-          <p className="text-xl font-semibold mb-4">{translations[language].partner}</p>
-          <p className="text-xl font-semibold mb-4">{translations[language].register}</p>
-          <a href="/register" className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 inline-block">{translations[language].go}</a>
-        </div>
-        <div className="bg-yellow-100 p-6 rounded-lg shadow-md w-full max-w-md mt-8 text-center">
-          <p className="text-xl font-semibold mb-4">{translations[language].driver}</p>
-          <a href="/driver" className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 inline-block">{translations[language].go}</a>
-        </div>
-        <div className="bg-yellow-100 p-6 rounded-lg shadow-md w-full max-w-md mt-8 text-center">
-          <p className="text-xl font-semibold mb-4">{translations[language].download}</p>
-          <a href="/download/ios" className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 inline-block mb-4">Download iOS App</a>
-          <a href="/download/android" className="bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-600 inline-block">Download Android App</a>
-        </div>
       </main>
       <footer className="bg-yellow-400 text-center p-4 mt-auto">
         <p>&copy; 2024 먹자. All rights reserved.</p>
       </footer>
     </div>
-  )
+  );
 }
+
