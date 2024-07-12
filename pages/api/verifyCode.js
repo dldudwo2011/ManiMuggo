@@ -1,21 +1,22 @@
 import AWS from 'aws-sdk';
 
-AWS.config.update({ region: 'us-east-1' });
+AWS.config.update({ region: 'us-east-2' });
 
-const sns = new AWS.SNS();
+const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 export default async (req, res) => {
   try {
     const { phone, code } = req.body;
 
-    // Add your actual verification logic here
-    // For demonstration, I'm using a placeholder logic
-    const storedCode = '123456'; // This should be fetched from your database or cache
+    // Fetch the stored code from DynamoDB
+    const result = await dynamodb.get({
+      TableName: 'VerificationCodes',
+      Key: { phone }
+    }).promise();
 
-    if (code === storedCode) {
+    if (result.Item && result.Item.code === code) {
       res.status(200).json({ success: true });
     } else {
-      
       res.status(400).json({ success: false, message: 'Invalid verification code' });
     }
   } catch (error) {
@@ -28,3 +29,4 @@ export default async (req, res) => {
     });
   }
 };
+

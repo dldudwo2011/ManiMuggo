@@ -1,3 +1,5 @@
-const nextConfig = {};
+const nextConfig = {
+    swcMinify: true,
+};
 
 export default nextConfig;

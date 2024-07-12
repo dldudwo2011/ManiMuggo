@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "../styles/DriverRegistration.module.css";
 
 const vehicleBrands = [
@@ -33,7 +35,9 @@ const DriverRegistration = () => {
     facePhoto: null,
     phoneVerified: false,
     verificationCode: '',
-    sentCode: ''
+    sentCode: '',
+    workPermitPhoto: null,
+    backgroundCheckConsent: false,
   });
 
   const handleChange = (e) => {
@@ -45,9 +49,10 @@ const DriverRegistration = () => {
   };
 
   const handleFileChange = (e) => {
+    const { name, files } = e.target;
     setFormData({
       ...formData,
-      facePhoto: e.target.files[0],
+      [name]: files[0],
     });
   };
 
@@ -103,8 +108,29 @@ const DriverRegistration = () => {
     }
   };
 
+  const validateStep = (currentStep) => {
+    switch (currentStep) {
+      case 0:
+        return formData.firstName && formData.lastName && formData.email && formData.phone && formData.phoneVerified;
+      case 1:
+        return formData.vehicleBrand && formData.vehicleType && formData.vehicleYear && formData.vehicleName && formData.licensePlate;
+      case 2:
+        return formData.licenseNumber && formData.facePhoto;
+      case 3:
+        return formData.workPermitPhoto;
+      case 4:
+        return formData.backgroundCheckConsent;
+      default:
+        return false;
+    }
+  };
+
   const nextStep = () => {
-    if (step < 3) setStep(step + 1);
+    if (validateStep(step)) {
+      setStep(step + 1);
+    } else {
+      toast.error('Please complete all required fields before proceeding.');
+    }
   };
 
   const prevStep = () => {
@@ -113,11 +139,16 @@ const DriverRegistration = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission
+    if (validateStep(step)) {
+      toast.success('All the forms submitted successfully! We will review and contact you later!');
+    } else {
+      toast.error('Please complete all required fields before submitting.');
+    }
   };
 
   return (
     <div className="max-w-lg mx-auto p-6 bg-white shadow-md rounded-md mt-8">
+      <ToastContainer />
       <TransitionGroup>
         <CSSTransition key={step} timeout={300} classNames="fade">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -158,6 +189,7 @@ const DriverRegistration = () => {
                   {!formData.phoneVerified && (
                     <div className="space-y-4">
                       <button 
+                        type="button"
                         onClick={sendVerificationCode} 
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                       >
@@ -224,7 +256,7 @@ const DriverRegistration = () => {
             )}
             {step === 2 && (
               <div className="form-step">
-                <h2 className="text-2xl font-bold mb-6">Step 3: License Verification</h2>
+                <h2 className="text-2xl font-bold mb-6">Step 3: ID Verification</h2>
                 <div className="space-y-4">
                   <label className="block">
                     License Number:
@@ -232,7 +264,7 @@ const DriverRegistration = () => {
                   </label>
                   <label className="block">
                     Upload Face Photo:
-                    <input type="file" accept="image/*" onChange={handleFileChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                    <input type="file" name="facePhoto" accept="image/*" onChange={handleFileChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
                   </label>
                 </div>
                 <div className="flex justify-between mt-6">
@@ -243,10 +275,25 @@ const DriverRegistration = () => {
             )}
             {step === 3 && (
               <div className="form-step">
-                <h2 className="text-2xl font-bold mb-6">Step 4: Agreement and Consent</h2>
+                <h2 className="text-2xl font-bold mb-6">Step 4: Work Permit Verification</h2>
                 <div className="space-y-4">
                   <label className="block">
-                    <input type="checkbox" name="consent" checked={formData.consent} onChange={handleChange} required className="mr-2" />
+                    Upload Work Permit Photo:
+                    <input type="file" name="workPermitPhoto" accept="image/*" onChange={handleFileChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                  </label>
+                </div>
+                <div className="flex justify-between mt-6">
+                  <button type="button" onClick={prevStep} className="bg-gray-500 text-white py-2 px-4 rounded-md shadow hover:bg-gray-600">Previous</button>
+                  <button type="button" onClick={nextStep} className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600">Next</button>
+                </div>
+              </div>
+            )}
+            {step === 4 && (
+              <div className="form-step">
+                <h2 className="text-2xl font-bold mb-6">Step 5: Background Check</h2>
+                <div className="space-y-4">
+                  <label className="block">
+                    <input type="checkbox" name="backgroundCheckConsent" checked={formData.backgroundCheckConsent} onChange={handleChange} required className="mr-2" />
                     I consent to a background check and agree to the terms and conditions.
                   </label>
                 </div>
@@ -264,7 +311,6 @@ const DriverRegistration = () => {
 };
 
 export default DriverRegistration;
-
 
 
 
