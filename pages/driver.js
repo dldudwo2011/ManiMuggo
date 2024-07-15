@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import Script from 'next/script';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
@@ -16,27 +17,8 @@ const vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Van', 'Coupe', 'Wagon', 'Convert
 
 const years = Array.from({ length: new Date().getFullYear() - 1990 + 1 }, (_, i) => 1990 + i);
 
-const [veriffSessionUrl, setVeriffSessionUrl] = useState(null);
-
-  const handleVeriffButtonClick = async () => {
-    const response = await fetch('/api/create-veriff-session', {
-      method: 'POST'
-    });
-    const data = await response.json();
-    setVeriffSessionUrl(data.veriffSessionUrl);
-
-    const veriff = Veriff({
-      host: 'https://stationapi.veriff.com',
-      apiKey: process.env.NEXT_PUBLIC_VERIFF_API_KEY, // Replace with your Veriff API key
-      parentId: 'veriffButton'
-    });
-    veriff.setParams({
-      sessionUrl: data.veriffSessionUrl
-    });
-    veriff.launch();
-  };
-
 const DriverRegistration = () => {
+  const [veriffSessionUrl, setVeriffSessionUrl] = useState(null);
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -59,6 +41,24 @@ const DriverRegistration = () => {
     workPermitPhoto: null,
     backgroundCheckConsent: false,
   });
+
+  const handleVeriffButtonClick = async () => {
+    const response = await fetch('/api/create-veriff-session', {
+      method: 'POST'
+    });
+    const data = await response.json();
+    setVeriffSessionUrl(data.veriffSessionUrl);
+
+    const veriff = Veriff({
+      host: 'https://stationapi.veriff.com',
+      apiKey: process.env.NEXT_PUBLIC_VERIFF_API_KEY, // Replace with your Veriff API key
+      parentId: 'veriffButton'
+    });
+    veriff.setParams({
+      sessionUrl: data.veriffSessionUrl
+    });
+    veriff.launch();
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -292,13 +292,13 @@ const DriverRegistration = () => {
                 <div className="flex justify-between mt-6">
                   <button type="button" onClick={prevStep} className="bg-gray-500 text-white py-2 px-4 rounded-md shadow hover:bg-gray-600">Previous</button>
                   <button
-          id="veriffButton"
-          type="button"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-          onClick={handleVeriffButtonClick}
-        >
-          Verify with Veriff
-        </button>
+                    id="veriffButton"
+                    type="button"
+                    className="bg-blue-500 text-white px-4 py-2 rounded"
+                    onClick={handleVeriffButtonClick}
+                  >
+                    Verify with Veriff
+                  </button>
                 </div>
               </div>
             )}
@@ -335,7 +335,7 @@ const DriverRegistration = () => {
           </form>
         </CSSTransition>
       </TransitionGroup>
-      <script src="https://cdn.veriff.me/sdk/js/v1/veriff.min.js"></script> 
+      <Script src="https://cdn.veriff.me/sdk/js/v1/veriff.min.js" strategy="lazyOnload" />
     </div>
   );
 };
