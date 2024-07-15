@@ -79,14 +79,14 @@ const RestaurantsNavBar = () => {
                             <li>
                                 <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">
                                     <div className="inline-flex items-center">
-                                        Deutsch
+                                        French
                                     </div>
                                 </a>
                             </li>
                             <li>
                                 <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">
                                     <div className="inline-flex items-center">
-                                        Italiano
+                                        한국
                                     </div>
                                 </a>
                             </li>

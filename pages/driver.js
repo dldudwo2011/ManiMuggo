@@ -16,6 +16,26 @@ const vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Van', 'Coupe', 'Wagon', 'Convert
 
 const years = Array.from({ length: new Date().getFullYear() - 1990 + 1 }, (_, i) => 1990 + i);
 
+const [veriffSessionUrl, setVeriffSessionUrl] = useState(null);
+
+  const handleVeriffButtonClick = async () => {
+    const response = await fetch('/api/create-veriff-session', {
+      method: 'POST'
+    });
+    const data = await response.json();
+    setVeriffSessionUrl(data.veriffSessionUrl);
+
+    const veriff = Veriff({
+      host: 'https://stationapi.veriff.com',
+      apiKey: process.env.NEXT_PUBLIC_VERIFF_API_KEY, // Replace with your Veriff API key
+      parentId: 'veriffButton'
+    });
+    veriff.setParams({
+      sessionUrl: data.veriffSessionUrl
+    });
+    veriff.launch();
+  };
+
 const DriverRegistration = () => {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -23,7 +43,7 @@ const DriverRegistration = () => {
     lastName: '',
     email: '',
     phone: '',
-    country: '',
+    country: 'canada',
     address: '',
     licenseNumber: '',
     vehicleBrand: '',
@@ -56,64 +76,66 @@ const DriverRegistration = () => {
     });
   };
 
-  const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState('canada');
-
   const handleCountryChange = (event) => {
     const selectedCountry = event.target.value;
-    setCountry(selectedCountry);
-    if (selectedCountry === 'canada') {
-      setPhone('+1');
-    } else if (selectedCountry === 'usa') {
-      setPhone('+1');
-    }
+    setFormData({
+      ...formData,
+      country: selectedCountry,
+      phone: selectedCountry === 'canada' || selectedCountry === 'usa' ? '+1' : '',
+    });
   };
 
   const handlePhoneChange = (event) => {
-    setPhone(event.target.value);
+    setFormData({
+      ...formData,
+      phone: event.target.value,
+    });
   };
 
   const sendVerificationCode = async () => {
     try {
-      const response = await axios.post('/api/sendVerificationCode', { phone });
+      const response = await axios.post('/api/sendVerificationCode', { phone: formData.phone });
       console.log('Verification code sent:', response.data);
-      alert('Verification code sent!');
+      toast.success('Verification code sent!');
     } catch (error) {
       console.error('Error sending verification code:', error);
-      if (error.response) {
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-        console.error('Response headers:', error.response.headers);
-      } else if (error.request) {
-        console.error('Request data:', error.request);
-      } else {
-        console.error('Error message:', error.message);
-      }
-      console.error('Error config:', error.config);
+      toast.error('Error sending verification code. Please try again.');
     }
   };
 
   const verifyCode = async () => {
     try {
-      const response = await axios.post('/api/verifyCode', { phone, code: formData.verificationCode });
+      const response = await axios.post('/api/verifyCode', { phone: formData.phone, code: formData.verificationCode });
       if (response.data.success) {
         setFormData({ ...formData, phoneVerified: true });
-        alert('Phone number verified!');
+        toast.success('Phone number verified!');
       } else {
-        alert('Invalid verification code');
+        toast.error('Invalid verification code');
       }
     } catch (error) {
       console.error('Error verifying code:', error);
-      alert('Error verifying code');
+      toast.error('Error verifying code. Please try again.');
     }
   };
 
   const validateStep = (currentStep) => {
     switch (currentStep) {
       case 0:
-        return formData.firstName && formData.lastName && formData.email && formData.phone && formData.phoneVerified;
+        return (
+          formData.firstName &&
+          formData.lastName &&
+          formData.email &&
+          formData.phone &&
+          formData.phoneVerified
+        );
       case 1:
-        return formData.vehicleBrand && formData.vehicleType && formData.vehicleYear && formData.vehicleName && formData.licensePlate;
+        return (
+          formData.vehicleBrand &&
+          formData.vehicleType &&
+          formData.vehicleYear &&
+          formData.vehicleName &&
+          formData.licensePlate
+        );
       case 2:
         return formData.licenseNumber && formData.facePhoto;
       case 3:
@@ -171,7 +193,7 @@ const DriverRegistration = () => {
                   <label htmlFor="country" className="block text-gray-700 text-sm font-bold mb-2">Country</label>
                   <select 
                     id="country" 
-                    value={country} 
+                    value={formData.country} 
                     onChange={handleCountryChange} 
                     className="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
                   >
@@ -182,7 +204,7 @@ const DriverRegistration = () => {
                   <input 
                     type="text" 
                     id="phone" 
-                    value={phone} 
+                    value={formData.phone} 
                     onChange={handlePhoneChange} 
                     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   />
@@ -269,7 +291,14 @@ const DriverRegistration = () => {
                 </div>
                 <div className="flex justify-between mt-6">
                   <button type="button" onClick={prevStep} className="bg-gray-500 text-white py-2 px-4 rounded-md shadow hover:bg-gray-600">Previous</button>
-                  <button type="button" onClick={nextStep} className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600">Next</button>
+                  <button
+          id="veriffButton"
+          type="button"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+          onClick={handleVeriffButtonClick}
+        >
+          Verify with Veriff
+        </button>
                 </div>
               </div>
             )}
@@ -306,11 +335,10 @@ const DriverRegistration = () => {
           </form>
         </CSSTransition>
       </TransitionGroup>
+      <script src="https://cdn.veriff.me/sdk/js/v1/veriff.min.js"></script> 
     </div>
   );
 };
 
 export default DriverRegistration;
-
-
 
