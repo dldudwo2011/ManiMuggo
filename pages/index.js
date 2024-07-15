@@ -1,4 +1,3 @@
-import Geolocation from '../components/Geolocation';
 import { useState, useEffect } from 'react';
 import '../src/app/globals.css';
 
@@ -48,12 +47,6 @@ export default function Home() {
   const [restaurants, setRestaurants] = useState([]);
   const [language, setLanguage] = useState('ko');
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  const fetchRestaurants = async (location) => {
-    const response = await fetch(`/api/restaurants?lat=${location.latitude}&lon=${location.longitude}`);
-    const data = await response.json();
-    setRestaurants(data);
-  };
 
   const slides = [
     {
