@@ -5,6 +5,8 @@
 /* Custom CSS can be added below if needed */
 .form-container {
   @apply max-w-lg mx-auto p-6 bg-white shadow-md rounded-md mt-8;
+  border-radius: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-step {

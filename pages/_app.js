@@ -17,7 +17,7 @@ function MyApp({ Component, pageProps }) {
       {isRestaurantsRoute ? <div><Banner/><RestaurantsNavBar/></div> : <NavBar/>}
       <Component {...pageProps}/>
       <footer class="bg-gray-50 dark:bg-gray-800">
-  <div class="p-4 py-6 mx-auto max-w-screen-xl md:p-8 lg:-10">
+  <div class="p-4 py-6 mx-auto max-w-screen-2xl bg-green-200 md:p-8 lg:-10">
           <div class="flex">
           <div class="lg:mx-auto">
               <h2 class="mb-6 text-sm font-semibold text-gray-900 uppercase dark:text-white">Company</h2>
