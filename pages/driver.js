@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import Script from 'next/script';
+import React, { useState} from 'react';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
@@ -16,7 +15,6 @@ const vehicleBrands = [
 const vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Van', 'Coupe', 'Wagon', 'Convertible'];
 
 const years = Array.from({ length: new Date().getFullYear() - 1990 + 1 }, (_, i) => 1990 + i);
-
 const DriverRegistration = () => {
   const [veriffSessionUrl, setVeriffSessionUrl] = useState(null);
   const [step, setStep] = useState(0);
@@ -40,26 +38,56 @@ const DriverRegistration = () => {
     sentCode: '',
     workPermitPhoto: null,
     backgroundCheckConsent: false,
+    driverLicensePhoto: null, // Added field for driver's license photo
   });
 
+  const [isVeriffButtonClicked, setIsVeriffButtonClicked] = useState(false); // New state to track button click
+  
+
   const handleVeriffButtonClick = async () => {
-    const response = await fetch('/api/create-veriff-session', {
-      method: 'POST'
-    });
-    const data = await response.json();
-    setVeriffSessionUrl(data.veriffSessionUrl);
-
-    const veriff = Veriff({
-      host: 'https://stationapi.veriff.com',
-      apiKey: process.env.NEXT_PUBLIC_VERIFF_API_KEY, // Replace with your Veriff API key
-      parentId: 'veriffButton'
-    });
-    veriff.setParams({
-      sessionUrl: data.veriffSessionUrl
-    });
-    veriff.launch();
+    if (!formData.driverLicensePhoto) {
+      toast.error('Please upload the driver license photo.');
+      return;
+    }
+  
+    if (isVeriffButtonClicked) return;
+    setIsVeriffButtonClicked(true);
+  
+    try {
+      const veriffResponse = await axios.post('/api/create-veriff-session');
+      const { veriffSessionUrl } = veriffResponse.data;
+      setVeriffSessionUrl(veriffSessionUrl);
+  
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', formData.driverLicensePhoto);
+  
+      const uploadResponse = await axios.post('/api/proxy-veriff', {
+        sessionUrl: `${veriffSessionUrl}/files`,
+        file: uploadFormData,
+      });
+  
+      if (uploadResponse.data.success) {
+        toast.success('File uploaded successfully and Veriff session started.');
+        const veriff = new Veriff({
+          host: 'https://stationapi.veriff.com',
+          apiKey: process.env.NEXT_PUBLIC_VERIFF_API_KEY,
+          parentId: 'veriffContainer',
+        });
+  
+        veriff.setParams({
+          sessionUrl: veriffSessionUrl,
+        });
+  
+        veriff.mount();
+      }
+    } catch (error) {
+      console.error('Error creating Veriff session:', error);
+      toast.error(`Error creating Veriff session: ${error.message}`);
+    }
   };
+  
 
+  
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -137,7 +165,7 @@ const DriverRegistration = () => {
           formData.licensePlate
         );
       case 2:
-        return formData.licenseNumber && formData.facePhoto;
+        return formData.driverLicensePhoto; // Ensure driver license photo is required
       case 3:
         return formData.workPermitPhoto;
       case 4:
@@ -162,7 +190,11 @@ const DriverRegistration = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateStep(step)) {
-      toast.success('All the forms submitted successfully! We will review and contact you later!');
+      if (step === 3) {
+        handleVeriffButtonClick(); // Start Veriff session if on the verification step
+      } else {
+        toast.success('All the forms submitted successfully! We will review and contact you later!');
+      }
     } else {
       toast.error('Please complete all required fields before submitting.');
     }
@@ -279,26 +311,18 @@ const DriverRegistration = () => {
             {step === 2 && (
               <div className="form-step">
                 <h2 className="text-2xl font-bold mb-6">Step 3: ID Verification</h2>
-                <div className="space-y-4">
-                  <label className="block">
-                    License Number:
-                    <input type="text" name="licenseNumber" value={formData.licenseNumber} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                  </label>
-                  <label className="block">
-                    Upload Face Photo:
-                    <input type="file" name="facePhoto" accept="image/*" onChange={handleFileChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                  </label>
-                </div>
-                <div className="flex justify-between mt-6">
+                <div id="veriffContainer">
+                <label className="block">
+                Upload Driver License Photo:
+                <input type="file" name="driverLicensePhoto" accept="image/*" onChange={handleFileChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+              </label>
+                <button onClick={handleVeriffButtonClick} id="veriffButton" className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600 mb-4">
+                Start Veriff Session
+              </button>
+              </div>
+              <div className="flex justify-between mt-6">
                   <button type="button" onClick={prevStep} className="bg-gray-500 text-white py-2 px-4 rounded-md shadow hover:bg-gray-600">Previous</button>
-                  <button
-                    id="veriffButton"
-                    type="button"
-                    className="bg-blue-500 text-white px-4 py-2 rounded"
-                    onClick={handleVeriffButtonClick}
-                  >
-                    Verify with Veriff
-                  </button>
+                  <button type="button" onClick={nextStep} className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600">Next</button>
                 </div>
               </div>
             )}
@@ -335,10 +359,12 @@ const DriverRegistration = () => {
           </form>
         </CSSTransition>
       </TransitionGroup>
-      <Script src="https://cdn.veriff.me/sdk/js/v1/veriff.min.js" strategy="lazyOnload" />
+      <script src='https://cdn.veriff.me/sdk/js/1.5/veriff.min.js'></script>
+      <script src='https://cdn.veriff.me/incontext/js/v1/veriff.js'></script>
     </div>
   );
 };
 
 export default DriverRegistration;
+
 

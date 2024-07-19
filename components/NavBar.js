@@ -47,7 +47,7 @@ const translations = {
 export default function NavBar(params) {
   const { data: session, status } = useSession();
   const [language, setLanguage] = useState('ko');
-    return(<nav class="bg-white border-gray-200 dark:bg-gray-900">
+    return(<nav class="sticky bg-white border-gray-200 dark:bg-gray-900">
         <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
         <link href="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.css" rel="stylesheet" />
         <a href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
