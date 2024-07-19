@@ -168,13 +168,19 @@ const DriverRegistration = () => {
     }
   };
 
-  return  (
-    <div className="max-w-lg mx-auto p-6 bg-white shadow-xl rounded-xl mt-8 mb-6">
-      <ToastContainer />
+  return   (
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow-xl rounded-xl mt-8 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="hidden md:flex items-center justify-center col-span-1">
+        <img
+         src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/office-content-2.png" alt="office image 2"
+          className="w-lg h-auto object-cover rounded-xl"
+        />
+      </div>
       <TransitionGroup>
         <CSSTransition key={step} timeout={300} classNames="fade">
           <form onSubmit={handleSubmit} className="space-y-6">
             {step === 0 && (
+              
               <div className="form-step">
                 <h2 className="text-2xl font-bold mb-6">Step 1: Personal Information</h2>
                 <div className="space-y-4">

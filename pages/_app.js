@@ -16,7 +16,7 @@ function MyApp({ Component, pageProps }) {
       <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEboTGCNHYI2E8Vy0_2a6y__vqy7Dj2kw&libraries=places&callback=initAutocomplete" async defer></script>
       {isRestaurantsRoute ? <div><Banner/><RestaurantsNavBar/></div> : <NavBar/>}
       <Component {...pageProps}/>
-      <footer class="bg-gray-50 dark:bg-gray-800">
+      <footer class="bg-green-400 dark:bg-gray-800">
   <div class="p-4 py-6 mx-auto max-w-screen-2xl bg-green-200 md:p-8 lg:-10">
           <div class="flex">
           <div class="lg:mx-auto">
