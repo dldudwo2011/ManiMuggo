@@ -1,8 +1,5 @@
-import AWS from 'aws-sdk';
+import { dynamodb } from '../../lib/dynamodb-local';
 
-AWS.config.update({ region: 'us-east-2' });
-
-const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 export default async (req, res) => {
   try {
@@ -11,7 +8,7 @@ export default async (req, res) => {
     // Fetch the stored code from DynamoDB
     const result = await dynamodb.get({
       TableName: 'VerificationCodes',
-      Key: { phone }
+      Key: { phone: phone.toString() } // Ensure phone is a string
     }).promise();
 
     if (result.Item && result.Item.code === code) {

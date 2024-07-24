@@ -1,10 +1,10 @@
-import React, { useState} from 'react';
+import React, { useState, useEffect} from 'react';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "../styles/DriverRegistration.module.css";
-
+import path from 'path';
 const vehicleBrands = [
   'Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'BMW', 'Mercedes-Benz',
   'Volkswagen', 'Audi', 'Kia', 'Hyundai', 'Mazda', 'Subaru', 'Lexus', 'Jeep',
@@ -16,8 +16,15 @@ const vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Van', 'Coupe', 'Wagon', 'Convert
 
 const years = Array.from({ length: new Date().getFullYear() - 1990 + 1 }, (_, i) => 1990 + i);
 const DriverRegistration = () => {
-  const [veriffSessionUrl, setVeriffSessionUrl] = useState(null);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(2);
+  const [documentType, setDocumentType] = useState('RESIDENCE_PERMIT');
+  const [file, setFile] = useState(null);
+  const [workPermitFile, setWorkPermitFile] = useState(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [verificationUrl, setVerificationUrl] = useState('');
+  const [verificationStatus, setVerificationStatus] = useState('');
+  const [workPermitVerificationUrl, setWorkPermitVerificationUrl] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -36,57 +43,31 @@ const DriverRegistration = () => {
     phoneVerified: false,
     verificationCode: '',
     sentCode: '',
-    workPermitPhoto: null,
-    backgroundCheckConsent: false,
-    driverLicensePhoto: null, // Added field for driver's license photo
+    file: null,
+    firstName: '',
+    lastName: '',
   });
-
-  const [isVeriffButtonClicked, setIsVeriffButtonClicked] = useState(false); // New state to track button click
   
 
-  const handleVeriffButtonClick = async () => {
-    if (!formData.driverLicensePhoto) {
-      toast.error('Please upload the driver license photo.');
-      return;
-    }
-  
-    if (isVeriffButtonClicked) return;
-    setIsVeriffButtonClicked(true);
-  
-    try {
-      const veriffResponse = await axios.post('/api/create-veriff-session');
-      const { veriffSessionUrl } = veriffResponse.data;
-      setVeriffSessionUrl(veriffSessionUrl);
-  
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', formData.driverLicensePhoto);
-  
-      const uploadResponse = await axios.post('/api/proxy-veriff', {
-        sessionUrl: `${veriffSessionUrl}/files`,
-        file: uploadFormData,
-      });
-  
-      if (uploadResponse.data.success) {
-        toast.success('File uploaded successfully and Veriff session started.');
-        const veriff = new Veriff({
-          host: 'https://stationapi.veriff.com',
-          apiKey: process.env.NEXT_PUBLIC_VERIFF_API_KEY,
-          parentId: 'veriffContainer',
-        });
-  
-        veriff.setParams({
-          sessionUrl: veriffSessionUrl,
-        });
-  
-        veriff.mount();
+  useEffect(() => {
+    if(step == 2){
+    const interval = setInterval(async () => {
+      try {
+        const filePath = path.join(process.cwd(), 'verification-status.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        const verification = JSON.parse(data);
+
+        if (verification.status) {
+          setVerificationStatus(verification.status);
+          clearInterval(interval);
+        }
+      } catch (error) {
+        console.error('Error checking verification status:', error);
       }
-    } catch (error) {
-      console.error('Error creating Veriff session:', error);
-      toast.error(`Error creating Veriff session: ${error.message}`);
-    }
-  };
-  
+    }, 5000);
 
+    return () => clearInterval(interval);
+  }}, []);
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -96,23 +77,16 @@ const DriverRegistration = () => {
     });
   };
 
-  const handleFileChange = (e) => {
-    const { name, files } = e.target;
-    setFormData({
-      ...formData,
-      [name]: files[0],
-    });
-  };
+    const handleCountryChange = (event) => {
+      const selectedCountry = event.target.value;
+      setFormData({
+        ...formData,
+        country: selectedCountry,
+        phone: selectedCountry === 'canada' || selectedCountry === 'usa' ? '+1' : '+1',
+      });
+    };
 
-  const handleCountryChange = (event) => {
-    const selectedCountry = event.target.value;
-    setFormData({
-      ...formData,
-      country: selectedCountry,
-      phone: selectedCountry === 'canada' || selectedCountry === 'usa' ? '+1' : '+1',
-    });
-  };
-
+    
   const handlePhoneChange = (event) => {
     setFormData({
       ...formData,
@@ -165,11 +139,9 @@ const DriverRegistration = () => {
           formData.licensePlate
         );
       case 2:
-        return formData.driverLicensePhoto; // Ensure driver license photo is required
+        return (formData.firstName && formData.lastName && formData.file);// Ensure driver license photo is required
       case 3:
-        return formData.workPermitPhoto;
-      case 4:
-        return formData.backgroundCheckConsent;
+        return (formData.firstName && formData.lastName && documentType && workPermitFile);
       default:
         return false;
     }
@@ -187,17 +159,52 @@ const DriverRegistration = () => {
     if (step > 0) setStep(step - 1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateStep(step)) {
-      if (step === 3) {
-        handleVeriffButtonClick(); // Start Veriff session if on the verification step
-      } else {
+     {
+      if (step === 2) {
+        const formData = new FormData();
+    formData.append('file', file);
+    formData.append('firstName', firstName);
+    formData.append('lastName', lastName);
+    try {
+      const response = await axios.post('/api/create-veriff-session', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setVerificationUrl(response.data.verificationUrl);
+    } catch (error) {
+      console.log(error.message);
+      console.error('Error creating Veriff session:', error);
+    }// Start Veriff session if on the verification step
+      }
+      
+      if(step ===3)
+        {
+          try {
+            const formData = new FormData();
+            formData.append('file', workPermitFile);
+            formData.append('documentType', documentType);
+            formData.append('firstName', firstName);
+            formData.append('lastName', lastName);
+
+            const response = await axios.post('/api/verify-work-permit', formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            });
+            setWorkPermitVerificationUrl(response.data.verificationUrl);
+          }
+          catch (error) {
+            console.log(error.message);
+            console.error('Error creating Veriff session:', error);
+          }
+        }
+      else {
         toast.success('All the forms submitted successfully! We will review and contact you later!');
       }
-    } else {
-      toast.error('Please complete all required fields before submitting.');
-    }
+    } 
   };
 
   return   (
@@ -209,6 +216,7 @@ const DriverRegistration = () => {
         />
       </div>
       <TransitionGroup>
+      <ToastContainer/>
         <CSSTransition key={step} timeout={300} classNames="fade">
           <form onSubmit={handleSubmit} className="space-y-6">
             {step === 0 && (
@@ -401,79 +409,65 @@ const DriverRegistration = () => {
             {step === 2 && (
               <div className="form-step">
                 <h2 className="text-2xl font-bold mb-6">Step 3: ID Verification</h2>
-<<<<<<< HEAD
-                <div id="veriffContainer">
-                <label className="block">
-                Upload Driver License Photo:
-                <input type="file" name="driverLicensePhoto" accept="image/*" onChange={handleFileChange} required className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-              </label>
-                <button onClick={handleVeriffButtonClick} id="veriffButton" className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600 mb-4">
-                Start Veriff Session
-              </button>
-              </div>
-              <div className="flex justify-between mt-6">
-                  <button type="button" onClick={prevStep} className="bg-gray-500 text-white py-2 px-4 rounded-md shadow hover:bg-gray-600">Previous</button>
-                  <button type="button" onClick={nextStep} className="bg-blue-500 text-white py-2 px-4 rounded-md shadow hover:bg-blue-600">Next</button>
-=======
-                <div className="space-y-4">
-                  <label className="block">
-                    License Number:
-                    <input
-                      type="text"
-                      name="licenseNumber"
-                      value={formData.licenseNumber}
-                      onChange={handleChange}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm"
-                    />
-                  </label>
-                  <label className="block">
-                    Upload Face Photo:
-                    <input
-                      type="file"
-                      name="facePhoto"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm"
-                    />
-                  </label>
+                <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                <input type="file" onChange={(e) => setFile(e.target.files[0])} required />
+                <button type="submit">Verify</button>
+              {verificationUrl && (
+                <div>
+                  <h2>Verification URL</h2>
+                  <a href={verificationUrl} target="_blank" rel="noopener noreferrer">{verificationUrl}</a>
                 </div>
-                <div className="flex justify-between mt-6">
-                  <button
-                    type="button"
-                    onClick={prevStep}
-                    className="bg-gray-500 text-white py-2 px-4 rounded-md shadow-sm hover:bg-gray-600"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    id="veriffButton"
-                    type="button"
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-600"
-                    onClick={handleVeriffButtonClick}
-                  >
-                    Verify with Veriff
-                  </button>
->>>>>>> d316703cc7c75abdbd85be1a03b7cf23ea2fb869
+              )}
+              {verificationStatus && (
+                <div>
+                  <h2>Verification Status</h2>
+                  <p>{verificationStatus}</p>
                 </div>
+              )}
               </div>
             )}
             {step === 3 && (
               <div className="form-step">
                 <h2 className="text-2xl font-bold mb-6">Step 4: Work Permit Verification</h2>
                 <div className="space-y-4">
+                <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                   <label className="block">
                     Upload Work Permit Photo:
                     <input
                       type="file"
                       name="workPermitPhoto"
                       accept="image/*"
-                      onChange={handleFileChange}
+                      onChange={setWorkPermitFile(e.target.files[0])}
                       required
                       className="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm"
                     />
                   </label>
+                  <div>
+                  <label htmlFor="documentType">Document Type</label>
+                  <select
+                    id="documentType"
+                    value={documentType}
+                    onChange={(e) => setDocumentType(e.target.value)}
+                  >
+                    <option value="RESIDENCE_PERMIT">Residence Permit</option>
+                    <option value="VISA">Visa</option>
+                  </select>
+                </div>
+                  <button type="submit">Verify</button>
+                  {workPermitVerificationUrl && (
+                <div>
+                  <h2>Verification URL</h2>
+                  <a href={workPermitVerificationUrl} target="_blank" rel="noopener noreferrer">{workPermitVerificationUrl}</a>
+                </div>
+              )}
+              {verificationStatus && (
+                <div>
+                  <h2>Verification Status</h2>
+                  <p>{verificationStatus}</p>
+                </div>
+              )}
                 </div>
                 <div className="flex justify-between mt-6">
                   <button
@@ -489,39 +483,6 @@ const DriverRegistration = () => {
                     className="bg-blue-500 text-white py-2 px-4 rounded-md shadow-sm hover:bg-blue-600"
                   >
                     Next
-                  </button>
-                </div>
-              </div>
-            )}
-            {step === 4 && (
-              <div className="form-step">
-                <h2 className="text-2xl font-bold mb-6">Step 5: Background Check</h2>
-                <div className="space-y-4">
-                  <label className="block">
-                    <input
-                      type="checkbox"
-                      name="backgroundCheckConsent"
-                      checked={formData.backgroundCheckConsent}
-                      onChange={handleChange}
-                      required
-                      className="mr-2"
-                    />
-                    I consent to a background check and agree to the terms and conditions.
-                  </label>
-                </div>
-                <div className="flex justify-between mt-6">
-                  <button
-                    type="button"
-                    onClick={prevStep}
-                    className="bg-gray-500 text-white py-2 px-4 rounded-md shadow-sm hover:bg-gray-600"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-green-500 text-white py-2 px-4 rounded-md shadow-sm hover:bg-green-600"
-                  >
-                    Submit
                   </button>
                 </div>
               </div>

@@ -13,6 +13,7 @@ function MyApp({ Component, pageProps }) {
   return (
     <SessionProvider session={pageProps.session}>
       <link href="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.css" rel="stylesheet" />
+      <script src="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.js"></script>
       <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEboTGCNHYI2E8Vy0_2a6y__vqy7Dj2kw&libraries=places&callback=initAutocomplete" async defer></script>
       {isRestaurantsRoute ? <div><Banner/><RestaurantsNavBar/></div> : <NavBar/>}
       <Component {...pageProps}/>
@@ -129,7 +130,6 @@ function MyApp({ Component, pageProps }) {
       <span class="block text-sm text-center text-gray-500 dark:text-gray-400">© 2021-2022 <a href="#" class="hover:underline">ManiMuggo™</a>. All Rights Reserved.</span>
   </div>
 </footer>
-<script src="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.js"></script>
     </SessionProvider>
   );
 }
