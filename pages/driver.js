@@ -16,7 +16,7 @@ const vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Van', 'Coupe', 'Wagon', 'Convert
 
 const years = Array.from({ length: new Date().getFullYear() - 1990 + 1 }, (_, i) => 1990 + i);
 const DriverRegistration = () => {
-  const [step, setStep] = useState(2);
+  const [step, setStep] = useState(0);
   const [documentType, setDocumentType] = useState('RESIDENCE_PERMIT');
   const [file, setFile] = useState(null);
   const [workPermitFile, setWorkPermitFile] = useState(null);
@@ -126,9 +126,9 @@ const DriverRegistration = () => {
         return (
           formData.firstName &&
           formData.lastName &&
-          formData.email &&
-          formData.phone &&
-          formData.phoneVerified
+          formData.email 
+          // formData.phone &&
+          // formData.phoneVerified
         );
       case 1:
         return (
@@ -268,7 +268,7 @@ const DriverRegistration = () => {
                     <option value="canada">Canada</option>
                     <option value="usa">USA</option>
                   </select>
-                  <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
+                  {/* <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
                   <input
                     type="text"
                     id="phone"
@@ -303,7 +303,7 @@ const DriverRegistration = () => {
                         Verify Code
                       </button>
                     </div>
-                  )}
+                  )} */}
                 </div>
                 <div className="flex justify-between mt-6">
                   <button
