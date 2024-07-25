@@ -61,6 +61,13 @@ export default function NavBar(params) {
   }, [session, status]);
 
 
+  try{
+    signIn()
+  }catch(error){
+    console.log(error);
+    console.log(error.message);
+  }
+
   const [language, setLanguage] = useState('ko');
     return(<nav class="sticky bg-white border-gray-200 dark:bg-gray-900">
         <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
