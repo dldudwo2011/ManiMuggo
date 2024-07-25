@@ -18,6 +18,7 @@ export default NextAuth({
       clientSecret: process.env.APPLE_CLIENT_SECRET,
     }),
   ],
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, account }) {
       // Persist the OAuth access_token to the token right after signin
