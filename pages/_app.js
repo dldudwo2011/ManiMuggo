@@ -1,10 +1,11 @@
 // pages/_app.js
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider} from 'next-auth/react';
 import '../src/app/globals.css'
 import RestaurantsNavBar from '../components/RestaurantsNavBar';
 import NavBar from '../components/NavBar';
 import Banner from '../components/Banner';
 import { useRouter } from 'next/router';
+
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
