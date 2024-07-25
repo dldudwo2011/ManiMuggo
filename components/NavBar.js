@@ -47,27 +47,6 @@ const translations = {
 export default function NavBar(params) {
   const { data: session, status } = useSession();
 
-
-  useEffect(() => {
-    console.log(session, status);
-    if (status === 'loading') {
-      // You can show a loading spinner here if needed
-      console.log('Checking authentication status...');
-    } else if (status === 'authenticated') {
-      console.log('User is authenticated:', session.user);
-    } else {
-      console.log('User is not authenticated');
-    }
-  }, [session, status]);
-
-
-  try{
-    signIn()
-  }catch(error){
-    console.log(error);
-    console.log(error.message);
-  }
-
   const [language, setLanguage] = useState('ko');
     return(<nav class="sticky bg-white border-gray-200 dark:bg-gray-900">
         <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
