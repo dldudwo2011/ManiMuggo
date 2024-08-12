@@ -1,14 +1,22 @@
+/* Example transition styles */
 .fade-enter {
   opacity: 0;
+  transform: translateX(-100%);
 }
+
 .fade-enter-active {
   opacity: 1;
-  transition: opacity 300ms;
+  transform: translateX(0);
+  transition: opacity 300ms ease-in, transform 300ms ease-in;
 }
+
 .fade-exit {
   opacity: 1;
+  transform: translateX(0);
 }
+
 .fade-exit-active {
   opacity: 0;
-  transition: opacity 300ms;
+  transform: translateX(100%);
+  transition: opacity 300ms ease-in, transform 300ms ease-in;
 }

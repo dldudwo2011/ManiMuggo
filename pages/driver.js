@@ -5,6 +5,16 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "../styles/DriverRegistration.module.css";
 import path from 'path';
+import SecureLS from 'secure-ls';
+import LoadingScreen from "../components/LoadingScreen"
+import { useSession, signIn } from 'next-auth/react';
+import { redirect } from 'next/navigation';
+
+let ls;
+if (typeof window !== "undefined") {
+  ls = new SecureLS({ encodingType: 'aes' });
+}
+
 const vehicleBrands = [
   'Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'BMW', 'Mercedes-Benz',
   'Volkswagen', 'Audi', 'Kia', 'Hyundai', 'Mazda', 'Subaru', 'Lexus', 'Jeep',
@@ -16,6 +26,10 @@ const vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Van', 'Coupe', 'Wagon', 'Convert
 
 const years = Array.from({ length: new Date().getFullYear() - 1990 + 1 }, (_, i) => 1990 + i);
 const DriverRegistration = () => {
+  const { data: session, status } = useSession();
+  const isLoading = status === "loading";
+  const [loading, setLoading] = useState(false);
+
   const [step, setStep] = useState(0);
   const [documentType, setDocumentType] = useState('RESIDENCE_PERMIT');
   const [file, setFile] = useState(null);
@@ -25,7 +39,11 @@ const DriverRegistration = () => {
   const [verificationUrl, setVerificationUrl] = useState('');
   const [verificationStatus, setVerificationStatus] = useState('');
   const [workPermitVerificationUrl, setWorkPermitVerificationUrl] = useState('');
-  const [formData, setFormData] = useState({
+
+  const [isDriverLicenseVerified, setIsDriverLicenseVerified] = useState(false);
+  const [isWorkPermitVerified, setIsWorkPermitVerified] = useState(false);
+
+  const [formData, setFormData] = useState(ls?.get('driverFormData') || {
     firstName: '',
     lastName: '',
     email: '',
@@ -44,12 +62,21 @@ const DriverRegistration = () => {
     verificationCode: '',
     sentCode: '',
     file: null,
-    firstName: '',
-    lastName: '',
   });
   
 
   useEffect(() => {
+    if (!isLoading && !session) {
+      signIn(); // Redirect to login page if not authenticated
+    }
+  }, [isLoading, session]);
+
+  if (isLoading || !session) {
+    return <LoadingScreen loading={true} />;
+  }
+
+  useEffect(() => {
+
     if(step == 2){
     const interval = setInterval(async () => {
       try {
@@ -58,7 +85,7 @@ const DriverRegistration = () => {
         const verification = JSON.parse(data);
 
         if (verification.status) {
-          setVerificationStatus(verification.status);
+          setIsDriverLicenseVerified(verification.status);
           clearInterval(interval);
         }
       } catch (error) {
@@ -67,31 +94,65 @@ const DriverRegistration = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }}, []);
+  }
+
+
+  if(step == 3){
+    const interval = setInterval(async () => {
+      try {
+        const filePath = path.join(process.cwd(), 'verification-status.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        const verification = JSON.parse(data);
+
+        if (verification.status) {
+          setIsWorkPermitVerified(verification.status);
+          clearInterval(interval);
+        }
+      } catch (error) {
+        console.error('Error checking verification status:', error);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }
+}, []);
+  
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
+    const updatedFormData = {
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
-    });
+    };
+    setFormData(updatedFormData);
+
+    // Store encrypted data in localStorage if available
+    if (ls) {
+      ls.set('driverFormData', updatedFormData);
+    }
   };
 
-    const handleCountryChange = (event) => {
-      const selectedCountry = event.target.value;
-      setFormData({
-        ...formData,
-        country: selectedCountry,
-        phone: selectedCountry === 'canada' || selectedCountry === 'usa' ? '+1' : '+1',
-      });
+  const handleCountryChange = (event) => {
+    const selectedCountry = event.target.value;
+    const updatedFormData = {
+      ...formData,
+      country: selectedCountry,
+      phone: selectedCountry === 'canada' || selectedCountry === 'usa' ? '+1' : '+1',
     };
+    setFormData(updatedFormData);
 
+    // Store encrypted data in localStorage if available
+    if (ls) {
+      ls.set('driverFormData', updatedFormData);
+    }
+  };
     
   const handlePhoneChange = (event) => {
     setFormData({
       ...formData,
       phone: event.target.value,
     });
+    ls.set('driverFormData', updatedFormData);
   };
 
   const sendVerificationCode = async () => {
@@ -161,6 +222,7 @@ const DriverRegistration = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
      {
       if (step === 2) {
         const formData = new FormData();
@@ -177,7 +239,7 @@ const DriverRegistration = () => {
     } catch (error) {
       console.log(error.message);
       console.error('Error creating Veriff session:', error);
-    }// Start Veriff session if on the verification step
+    }
       }
       
       if(step ===3)
@@ -201,13 +263,39 @@ const DriverRegistration = () => {
             console.error('Error creating Veriff session:', error);
           }
         }
-      else {
-        toast.success('All the forms submitted successfully! We will review and contact you later!');
+      else if (isDriverLicenseVerified && isWorkPermitVerified) {
+        
+
+        // Simulate a delay for loading demonstration
+    setTimeout(async () => {
+      try {
+        // Your existing form submission logic
+        const response = await axios.post('/api/submitToDynamoDB', {
+          data: formData,
+        });
+
+        //put amazon SNS and SES logic to send email and text message
+        setLoading(false);
+        toast.success('All the forms submitted successfully! We will review and contact you later through email!');
+        ls.remove('driverFormData');
+        redirect("/");
+      } catch (error) {
+        setLoading(false);
+        console.error('Error submitting data:', error);
+        toast.error('Error submitting data. Please try again.');
+      }
+    }, 2000);
+      }
+      else
+      {
+        toast.error('Please complete all verifications before submitting.');
       }
     } 
   };
 
   return   (
+    <>
+    {loading && <LoadingScreen loading={true} />}
     <div className="max-w-3xl mx-auto p-6 bg-white shadow-xl rounded-xl mt-8 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="hidden h-screen md:flex items-center justify-center col-span-1">
         <img
@@ -534,6 +622,7 @@ const DriverRegistration = () => {
       <script src='https://cdn.veriff.me/sdk/js/1.5/veriff.min.js'></script>
       <script src='https://cdn.veriff.me/incontext/js/v1/veriff.js'></script>
     </div>
+    </>
   );
 };
 
