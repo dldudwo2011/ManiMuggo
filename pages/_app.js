@@ -1,5 +1,6 @@
 // pages/_app.js
 import { SessionProvider} from 'next-auth/react';
+import { appWithTranslation } from 'next-i18next';
 import '../src/app/globals.css'
 import RestaurantsNavBar from '../components/RestaurantsNavBar';
 import NavBar from '../components/NavBar';
