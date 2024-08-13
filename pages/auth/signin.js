@@ -1,9 +1,9 @@
-import { providers, signIn, csrfToken } from "next-auth/react"
+import { getProviders, signIn, csrfToken } from "next-auth/react"
 
 export default function SignIn({ providers, csrfToken }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <h1 className="text-2xl font-bold mb-6">Sign in to 먹자</h1>
+      <h1 className="text-2xl font-bold mb-6">Sign in to ManiMuggo</h1>
       {Object.values(providers).map((provider) => (
         <div key={provider.name} className="mb-4">
           <button
@@ -23,9 +23,10 @@ export default function SignIn({ providers, csrfToken }) {
   )
 }
 
-SignIn.getInitialProps = async (context) => {
+// Fetch the authentication providers
+export async function getServerSideProps() {
+  const providers = await getProviders();
   return {
-    providers: await providers(context),
-    csrfToken: await csrfToken(context),
-  }
+    props: { providers },
+  };
 }
